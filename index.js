@@ -23,7 +23,7 @@ const storage = new Storage({
 const bucket = storage.bucket("sister-bucket"); // Dapatkan melalui Google Cloud -> Storage -> Browser/Bucket -> Create Bucket (Input nama bucket)
 
 // Mendapatkan semua file dari Google Storage
-app.get("/upload", async (req, res) => {
+app.get("/files", async (req, res) => {
   try {
     const [files] = await bucket.getFiles();
     res.send([files]);
@@ -40,7 +40,10 @@ app.post("/upload", multer.single("imgfile"), (req, res) => {
   try {
     if (req.file) {
       console.log("File found, trying to upload...");
-      const blob = bucket.file(req.file.originalname);
+      const namaFile = req.file.originalname.split(".")[0];
+      const extFile = req.file.originalname.split(".")[1];
+      
+      const blob = bucket.file(`${namaFile.replaceAll(/[^a-zA-Z0-9]/g,'_')}.${extFile}`); // Mengganti special character pada nama file dengan underscore
       const blobStream = blob.createWriteStream();
 
       blobStream.on("finish", () => {
@@ -78,7 +81,10 @@ app.post("/rename", async (req, res) => {
   try {
     const { id, namabaru } = req.body;
     const file = bucket.file(id);
-    await file.rename(namabaru);
+    const namaFile = namabaru.split(".")[0];
+    const extFile = namabaru.split(".")[1];
+
+    await file.rename(`${namaFile.replaceAll(/[^a-zA-Z0-9]/g,'_')}.${extFile}`);
 
     res.status(200).send("Success");
     console.log("File renamed successfully");

@@ -14,9 +14,25 @@ document.getElementById("submitBtn").addEventListener("click", () => {
   let file = inputElem.files[0];
   let currentName = file.name;
   currentName = currentName.split(".")[0];
-  // Create new file so we can rename the file
-  let blob = file.slice(0, file.size, "image/jpeg");
-  newFile = new File([blob], `${postid}_post_${currentName}.jpeg`, { type: "image/jpeg" });
+
+
+  // Cek apakah file yang diupload adalah gambar atau bukan
+  // jika iya, maka gunakan ekstensi .jpeg
+  // jika tidak, maka gunakan ekstensi asli
+  let blob
+  let newFile
+  if (file.name.includes(".jpeg") || file.name.includes(".jpg") || file.name.includes(".png")) {
+    blob = file.slice(0, file.size, "image/jpeg");
+    newFile = new File([blob], `${postid}_post_${currentName}.jpeg`, { type: "image/jpeg" });
+  } else {
+    blob = file.slice(0, file.size, file.type);
+    newFile = new File([blob], `${postid}_post_${currentName}.${file.name.split(".")[1]}`, { type: file.type });
+  }
+
+
+  // newFile = new File([blob], `${postid}_post_${currentName}.jpeg`, { type: "image/jpeg" });
+
+
   // Build the form data - You can add other input values to this i.e descriptions, make sure img is appended last
   let formData = new FormData();
   formData.append("imgfile", newFile);
@@ -36,7 +52,7 @@ document.getElementById("submitBtn").addEventListener("click", () => {
 
 // Loads the posts on page load
 function loadPosts() {
-  fetch("/upload")
+  fetch("/files")
     .then((res) => res.json())
     .then((x) => {
       for (y = 0; y < x[0].length; y++) {
@@ -45,12 +61,27 @@ function loadPosts() {
         console.log("View button clicked for image", x[0][y].id);
 
         // Menentukan apakah file yang diupload adalah gambar atau bukan
-        const newimg = document.createElement("img");
-        newimg.setAttribute("src", "http://34.110.138.14/" + x[0][y].id);
-        newimg.setAttribute("width", 200);
-        newimg.setAttribute("height", 200);
-        newimg.setAttribute("alt", "Image");
-        newimg.id = x[0][y].id;
+        // Jika iya, maka tampilkan gambar (img)
+        // Jika tidak, maka tampilkan nama file dengan kotak kosong (div)
+        let fileData
+
+        if (x[0][y].id.includes(".jpeg") || x[0][y].id.includes(".jpg") || x[0][y].id.includes(".png")) {
+          fileData = document.createElement("img");
+          fileData.setAttribute("src", "http://34.110.138.14/" + x[0][y].id);
+          fileData.setAttribute("width", 200);
+          fileData.setAttribute("height", 200);
+          fileData.className = "shadow-none mt-5 p-3 bg-body-tertiary rounded";
+          fileData.setAttribute("alt", "Image");
+          fileData.id = x[0][y].id;
+          } 
+        else {
+          fileData = document.createElement("div");
+          fileData.textContent = x[0][y].id;
+          fileData.setAttribute("width", 200);
+          fileData.setAttribute("height", 200);
+          fileData.className = "shadow-none mt-5 p-3 bg-body-tertiary rounded";
+          fileData.id = x[0][y].id;
+        }
 
         // Menampilkan nama file
         const currentNameBtn = document.createElement("button");
@@ -98,7 +129,7 @@ function loadPosts() {
         });
 
         // Append elements to the container div
-        containerDiv.appendChild(newimg);
+        containerDiv.appendChild(fileData);
         containerDiv.appendChild(currentNameBtn);
         containerDiv.appendChild(viewBtn);
         containerDiv.appendChild(renameBtn);
@@ -120,11 +151,17 @@ function renameFile(id) {
   let newname = prompt("Please enter a new name for the file");
   if (newname != null) {
     let postid = uuidv4();
+
+    // Ambil nama file 
     if(newname.includes(".")){
-      let newname = newname.split(".")[0];
+      newname = newname.split(".")[0];
     }
 
-    let namabaru = `${postid}_post_${newname}.jpeg`;
+    console.log("newname", newname);
+    console.log("id", id);
+    console.log("idsplit", id.split(".")[1]);
+
+    let namabaru = `${postid}_post_${newname}.${id.split(".")[1]}`;
     console.log("namaBaru", namabaru);
 
     fetch("/rename", {
