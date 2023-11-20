@@ -1,3 +1,6 @@
+# GCP's credential service account key file
+key.json
+
 # Logs
 logs
 *.log
