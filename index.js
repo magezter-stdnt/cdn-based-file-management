@@ -10,19 +10,19 @@ app.use(express.static(src));
 const multer = Multer({
   storage: Multer.memoryStorage(),
   limits: {
-    fileSize: 5 * 1024 * 1024, // No larger than 5mb, change as you need
+    fileSize: 5 * 1024 * 1024, //Max file size 5MB
   },
 });
 
-let projectId = "sistem-terdistribusi-405404"; // Get this from Google Cloud
-let keyFilename = "key.json"; // Get this from Google Cloud -> Credentials -> Service Accounts
+let projectId = "sistem-terdistribusi-405404"; // Dapatkan melalui Google Cloud -> Project Settings -> Project ID
+let keyFilename = "key.json"; // Dapatkan melalui Google Cloud -> API & Services -> Credentials -> Service Account -> Manage Service Account -> Create Key -> JSON (Download then move to root folder)
 const storage = new Storage({
   projectId,
   keyFilename,
 });
-const bucket = storage.bucket("sister-bucket"); // Get this from Google Cloud -> Storage
+const bucket = storage.bucket("sister-bucket"); // Dapatkan melalui Google Cloud -> Storage -> Browser/Bucket -> Create Bucket (Input nama bucket)
 
-// Gets all files in the defined bucket
+// Mendapatkan semua file dari Google Storage
 app.get("/upload", async (req, res) => {
   try {
     const [files] = await bucket.getFiles();
@@ -32,7 +32,9 @@ app.get("/upload", async (req, res) => {
     res.send("Error:" + error);
   }
 });
-// Streams file upload to Google Storage
+
+
+// Mengupload file ke Google Storage
 app.post("/upload", multer.single("imgfile"), (req, res) => {
   console.log("Made it /upload");
   try {
@@ -51,11 +53,52 @@ app.post("/upload", multer.single("imgfile"), (req, res) => {
     res.status(500).send(error);
   }
 });
-// Get the main index html file
+
+
+// Mengirimkan file index.html ke client sebagai halaman utama
 app.get("/", (req, res) => {
   res.sendFile(src + "/index.html");
 });
-// Start the server on port 8080 or as defined
+
+
+// Memulai server di port 8080 (atau lainnya)
 app.listen(port, () => {
   console.log(`Server started on port ${port}`);
+});
+
+
+
+app.use(express.json());
+
+
+// Merename file di Google Storage bucket
+app.post("/rename", async (req, res) => {
+  console.log("Made it /rename"); 
+
+  try {
+    const { id, namabaru } = req.body;
+    const file = bucket.file(id);
+    await file.rename(namabaru);
+
+    res.status(200).send("Success");
+    console.log("File renamed successfully");
+  } catch (error) {
+    res.status(500).send(error);
+    console.log("File rename ERROR",error);
+  }
+});
+
+// Menghapus file di Google Storage bucket
+app.post("/delete", async (req, res) => {
+  try {
+    const { id } = req.body;
+    const file = bucket.file(id);
+    await file.delete();
+
+    res.status(200).send("Success");
+    console.log("File deleted successfully");
+  } catch (error) {
+    res.status(500).send(error);
+    console.log("File delete ERROR",error);
+  }
 });
